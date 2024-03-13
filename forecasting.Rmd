@@ -1,0 +1,210 @@
+---
+title: "Time-Series: Forecasting"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+runtime: shiny
+---
+
+
+```{r}
+
+library(sf)
+library( DT )
+library( ggmap )
+library( shiny )
+library( knitr )
+library( pander )
+library( leaflet )
+library( viridis )
+library( rsconnect )
+library( tidyverse )
+library( flexdashboard )
+library(leaflet.extras)
+library(leaflet.providers)
+library(shiny)
+library(shinyWidgets)
+library(plotly)
+library(ggthemes)
+library(glue)
+
+rm(list=ls())
+
+dir = "C:/Users/rudym/OneDrive/Desktop/presentations_aesir/presentations_2024/aesir_trip"
+
+
+
+df<-list.files(dir,"data.csv", full.names = T)
+
+
+components<-read_csv(df)
+
+
+
+# time_index <- seq(from = as.Date("2010-01-01"),
+#                   to = as.Date("2024-01-01"), by = "month")
+# 
+# 
+# components<-components%>%
+#   mutate(date = time_index)
+# 
+# 
+# new<-tibble(
+#   time = time_index,
+#   cars = df$TOTALNSA
+# )
+# 
+# 
+#new<-new[new$time >"2009-12-01",]
+# 
+# 
+# ts<-tsibble(
+#   date = yearmonth(new$time),
+#   cars = new$cars
+# )
+# 
+# 
+# components<-ts %>%
+#    model( stl = STL(cars)) %>%
+#   components()%>%
+#   as_tibble()%>%
+#   mutate(diff = difference(cars),
+#          log = log(cars))
+# 
+#write.csv(components,file.path(dir,"data.csv"),row.names = F)
+
+choices<-c("none","difference","percent change")
+
+```
+
+
+
+
+<b>Decomposition</b> 
+=====================================  
+
+
+Sidebar {.sidebar}
+-------------------------------------
+
+
+```{r}
+
+pickerInput(
+  inputId = "transformation", 
+  label = HTML('<b style="color:#234370;
+               font-size: 20px;
+               ">Transformation</b>'), 
+  choices = choices,
+  selected = "none"
+)
+
+
+
+```
+
+
+
+
+
+<style>
+
+.chart-title {
+    border-bottom: 1px solid #dfdfdf;
+    font-size: 14px;
+    font-weight: 300;
+    padding: 7px 10px 4px;
+    color: white;
+    font-family: inherit;
+    background-color: #234370;
+}
+
+</style>
+
+
+
+<style>
+
+.navbar-inverse {
+    background-color: #2b2d38;
+    border-color: #2b2d38;
+}
+
+</style>
+
+
+<style>
+
+.navbar, [data-toggle=tab], .navbar-brand  {
+background-color:#2b2d38!important;
+boarder-color: #fffff!important;}
+
+</style>
+
+
+
+<style>
+
+.section.sidebar {
+    top: 51px;
+    background-color: #ffffff;
+}
+
+</style>
+
+
+
+
+
+
+
+
+
+
+
+
+Outputs {data-width=650} 
+-------------------------------------
+
+### <b>Total Vehicle Sales</b>
+
+```{r}
+
+renderPlotly({
+  
+  
+
+
+if(input$transformation =="none"){
+
+  components %>%
+  ggplot(aes(x = date, y = cars)) +
+  geom_line(colour = "#112446") +
+  theme_minimal()->p
+  
+} else if (input$transformation == "difference"){
+  
+  components %>%
+ ggplot(aes(x = date, y = diff)) +
+  geom_line(colour = "#112446") +
+  theme_minimal()->p
+  
+  
+} else if (input$transformation == "percent change"){
+  
+  
+  components %>%
+  ggplot(aes(x = date, y = log)) +
+  geom_line(colour = "#112446") +
+  theme_minimal()->p
+}
+  
+  p
+  
+  
+})
+  
+```
+
+
