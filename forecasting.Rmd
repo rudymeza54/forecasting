@@ -10,71 +10,47 @@ runtime: shiny
 
 ```{r}
 
-library(sf)
-library( DT )
-library( ggmap )
-library( shiny )
-library( knitr )
-library( pander )
-library( leaflet )
-library( viridis )
-library( rsconnect )
-library( tidyverse )
-library( flexdashboard )
-library(leaflet.extras)
-library(leaflet.providers)
+library(tidyverse)
+library(flexdashboard)
 library(shiny)
 library(shinyWidgets)
 library(plotly)
-library(ggthemes)
-library(glue)
+library(tsibble)
+library(tsibbledata)
+library(feasts)
+library(fable)
+library(fabletools)
+library(urca)
+library(fable.prophet)
+
+```
+
+
+
+```{r}
+
 
 rm(list=ls())
 
-dir = "C:/Users/rudym/OneDrive/Desktop/presentations_aesir/presentations_2024/aesir_trip"
+df<-fpp3::us_employment
+
+df <- df |>
+  filter(year(Month) >= 1990, Title == "Retail Trade") |>
+  select(-Series_ID)|>
+  mutate(diff = difference(Employed),
+         log = log(Employed),
+         diff_log = difference(log))
 
 
 
-df<-list.files(dir,"data.csv", full.names = T)
+dcmp <- df |>
+  model(stl = STL(Employed))
 
 
-components<-read_csv(df)
+comps<-components(dcmp)
 
 
-
-# time_index <- seq(from = as.Date("2010-01-01"),
-#                   to = as.Date("2024-01-01"), by = "month")
-# 
-# 
-# components<-components%>%
-#   mutate(date = time_index)
-# 
-# 
-# new<-tibble(
-#   time = time_index,
-#   cars = df$TOTALNSA
-# )
-# 
-# 
-#new<-new[new$time >"2009-12-01",]
-# 
-# 
-# ts<-tsibble(
-#   date = yearmonth(new$time),
-#   cars = new$cars
-# )
-# 
-# 
-# components<-ts %>%
-#    model( stl = STL(cars)) %>%
-#   components()%>%
-#   as_tibble()%>%
-#   mutate(diff = difference(cars),
-#          log = log(cars))
-# 
-#write.csv(components,file.path(dir,"data.csv"),row.names = F)
-
-choices<-c("none","difference","percent change")
+choices<-c("none","difference","log","diff_log")
 
 ```
 
@@ -105,7 +81,9 @@ pickerInput(
 ```
 
 
+**Transformation Filter**: Allows user to see different transformations to the series.
 
+The model used for decomposition is the **STL** (Seasonal and Trend decomposition using Loess)
 
 
 <style>
@@ -167,44 +145,767 @@ boarder-color: #fffff!important;}
 Outputs {data-width=650} 
 -------------------------------------
 
-### <b>Total Vehicle Sales</b>
+### <b>US Retail Employment</b>
+
+```{r}
+
+renderPlotly({
+ 
+  if(input$transformation=="none"){ 
+  p<-autoplot(df, Employed) +
+  labs(y = "Persons (thousands)",
+       title = "Total employment in US retail")
+  } else if(input$transformation=="difference"){
+    
+    p<-autoplot(df, diff) +
+  labs(y = "Persons (thousands)",
+       title = "Total employment in US retail")
+  }else if(input$transformation=="log"){
+    
+    p<-autoplot(df, log) +
+  labs(y = "Persons (thousands)",
+       title = "Total employment in US retail")
+  }else if(input$transformation=="diff_log"){
+    
+    p<-autoplot(df, diff_log) +
+  labs(y = "Persons (thousands)",
+       title = "Total employment in US retail")
+  }
+  
+  ggplotly(p)
+
+})
+
+```
+
+Column {data-width=650} 
+-------------------------------------
+
+### <b>Trend</b>
+
 
 ```{r}
 
 renderPlotly({
   
   
+  p<-autoplot(comps, trend) +
+  labs(y = "Persons (thousands)",
+       title = "Total employment in US retail")
+  
+  
+  ggplotly(p)
+  
+})
 
 
-if(input$transformation =="none"){
+```
 
-  components %>%
-  ggplot(aes(x = date, y = cars)) +
-  geom_line(colour = "#112446") +
-  theme_minimal()->p
-  
-} else if (input$transformation == "difference"){
-  
-  components %>%
- ggplot(aes(x = date, y = diff)) +
-  geom_line(colour = "#112446") +
-  theme_minimal()->p
+
+### <b>Season Year</b>
+
+
+```{r}
+
+renderPlotly({
   
   
-} else if (input$transformation == "percent change"){
+  p<-autoplot(comps, season_year) +
+  labs(y = "Persons (thousands)",
+       title = "Total employment in US retail")
   
   
-  components %>%
-  ggplot(aes(x = date, y = log)) +
-  geom_line(colour = "#112446") +
-  theme_minimal()->p
+  ggplotly(p)
+  
+})
+
+
+```
+
+
+### <b>Remainder</b>
+
+
+```{r}
+
+renderPlotly({
+  
+  
+  p<-autoplot(comps, remainder) +
+  labs(y = "Persons (thousands)",
+       title = "Total employment in US retail")
+  
+  
+  ggplotly(p)
+  
+})
+
+
+```
+
+
+
+<b>Prewhitening</b> {data-orientation=rows}
+=====================================  
+
+Sidebar {.sidebar}
+-------------------------------------
+
+```{r}
+
+pickerInput(
+  inputId = "transformation2", 
+  label = HTML('<b style="color:#234370;
+               font-size: 20px;
+               ">Transformation</b>'), 
+  choices = choices,
+  selected = "none"
+)
+
+
+
+```
+
+
+**Transformation Filter: Allows user to see different transformations to the series.**
+
+
+<style>
+
+.chart-title {
+    border-bottom: 1px solid #dfdfdf;
+    font-size: 14px;
+    font-weight: 300;
+    padding: 7px 10px 4px;
+    color: white;
+    font-family: inherit;
+    background-color: #234370;
 }
+
+</style>
+
+
+
+<style>
+
+.navbar-inverse {
+    background-color: #2b2d38;
+    border-color: #2b2d38;
+}
+
+</style>
+
+
+<style>
+
+.navbar, [data-toggle=tab], .navbar-brand  {
+background-color:#2b2d38!important;
+boarder-color: #fffff!important;}
+
+</style>
+
+
+
+<style>
+
+.section.sidebar {
+    top: 51px;
+    background-color: #ffffff;
+}
+
+</style>
+
+
+
+
+
+
+
+
+
+
+
+
+Column 
+-------------------------------------
+
+### <b>Stationary Test<br>P-Value<br></b>
+```{r}
+cols<-c("Employed","diff","log","diff_log")
+
+
+x<-map(df[,cols],unitroot_kpss)%>%as_tibble()
+
+
+
+
+renderValueBox({
+ 
+  if(input$transformation2=="none"){ 
+  p<-x[2,"Employed"]
+  
+  } else if(input$transformation2=="difference"){
+    
+    p<-x[2,"diff"]
+  } else if(input$transformation2=="log"){
+    
+    p<-x[2,"log"]
+  }else if(input$transformation2=="diff_log"){
+    
+    p<-x[2,"diff_log"]
+  }
+  
+
+    valueBox(p, 
+           icon = ifelse(test = p < .05,
+                        yes = "fa fa-thumbs-down",
+                        no = "fa fa-thumbs-up"),
+           color = ifelse(test = p < .05, 
+                          yes = "danger", 
+                          no = "primary"))
+
+})
+
+
+
+
+```
+
+
+
+### <b>Average</b>
+```{r}
+cols<-c("Employed","diff","log","diff_log")
+
+
+x<-map(df[,cols],unitroot_kpss)%>%as_tibble()
+x1<-round(map(df[,cols],mean,na.rm=T)%>%as_tibble(),2)
+
+
+
+renderValueBox({
+ 
+  if(input$transformation2=="none"){ 
+  p<-x[2,"Employed"]
+  z<-x1[1,"Employed"]
+  
+  } else if(input$transformation2=="difference"){
+    
+    p<-x[2,"diff"]
+    z<-x1[1,"diff"]
+  } else if(input$transformation2=="log"){
+    
+    p<-x[2,"log"]
+    z<-x1[1,"log"]
+  }else if(input$transformation2=="diff_log"){
+    
+    p<-x[2,"diff_log"]
+    z<-x1[1,"diff_log"]
+  }
+  
+
+    valueBox(z, 
+           icon = ifelse(test = p < .05,
+                        yes = "fa fa-thumbs-down",
+                        no = "fa fa-thumbs-up"),
+           color = ifelse(test = p < .05, 
+                          yes = "danger", 
+                          no = "primary"))
+
+})
+
+
+
+
+```
+
+
+
+### <b>Standard Deviation</b>
+```{r}
+cols<-c("Employed","diff","log","diff_log")
+
+
+x<-map(df[,cols],unitroot_kpss)%>%as_tibble()
+x2<-round(map(df[,cols],sd,na.rm=T)%>%as_tibble(),2)
+
+
+
+renderValueBox({
+ 
+  if(input$transformation2=="none"){ 
+  p<-x[2,"Employed"]
+  z<-x2[1,"Employed"]
+  
+  } else if(input$transformation2=="difference"){
+    
+    p<-x[2,"diff"]
+    z<-x2[1,"diff"]
+  } else if(input$transformation2=="log"){
+    
+    p<-x[2,"log"]
+    z<-x2[1,"log"]
+  }else if(input$transformation2=="diff_log"){
+    
+    p<-x[2,"diff_log"]
+    z<-x2[1,"diff_log"]
+  }
+  
+
+    valueBox(z, 
+           icon = ifelse(test = p < .05,
+                        yes = "fa fa-thumbs-down",
+                        no = "fa fa-thumbs-up"),
+           color = ifelse(test = p < .05, 
+                          yes = "danger", 
+                          no = "primary"))
+
+})
+
+
+
+
+```
+
+
+
+
+
+Row 
+-------------------------------------
+
+### <b>US Retail Employment</b>
+
+```{r}
+
+renderPlotly({
+ 
+  if(input$transformation2=="none"){ 
+  p<-autoplot(df, Employed) +
+  labs(y = "Persons (thousands)",
+       title = "Total employment in US retail")
+  } else if(input$transformation2=="difference"){
+    
+    p<-autoplot(df, diff) +
+  labs(y = "Persons (thousands)",
+       title = "Total employment in US retail")
+  }else if(input$transformation2=="log"){
+    
+    p<-autoplot(df, log) +
+  labs(y = "Persons (thousands)",
+       title = "Total employment in US retail")
+  }else if(input$transformation2=="diff_log"){
+    
+    p<-autoplot(df, diff_log) +
+  labs(y = "Persons (thousands)",
+       title = "Total employment in US retail")
+  }
+  
+  ggplotly(p)
+
+})
+
+```
+
+
+
+<b>Identification</b> {data-orientation=rows}
+=====================================  
+
+Sidebar {.sidebar}
+-------------------------------------
+
+
+```{r}
+
+pickerInput(
+  inputId = "transformation3", 
+  label = HTML('<b style="color:#234370;
+               font-size: 20px;
+               ">Transformation</b>'), 
+  choices = choices,
+  selected = "none"
+)
+
+
+
+
+```
+
+
+**Identification Process**: See how many AR's and MA's are needed for implementing ARIMA Forecast Model
+
+Row 
+-------------------------------------
+
+### <b>US Retail Employment</b>
+
+```{r}
+
+renderPlotly({
+ 
+  if(input$transformation3=="none"){ 
+  p<-autoplot(df, Employed) +
+  labs(y = "Persons (thousands)",
+       title = "Total employment in US retail")
+  } else if(input$transformation3=="difference"){
+    
+    p<-autoplot(df, diff) +
+  labs(y = "Persons (thousands)",
+       title = "Total employment in US retail")
+  }else if(input$transformation3=="log"){
+    
+    p<-autoplot(df, log) +
+  labs(y = "Persons (thousands)",
+       title = "Total employment in US retail")
+  }else if(input$transformation3=="diff_log"){
+    
+    p<-autoplot(df, diff_log) +
+  labs(y = "Persons (thousands)",
+       title = "Total employment in US retail")
+  }
+  
+  ggplotly(p)
+
+})
+
+```
+
+
+Column 
+-------------------------------------
+
+### <b>ACF</b>
+
+```{r}
+
+renderPlotly({
+ 
+  if(input$transformation3=="none"){ 
+    
+    p<-df |> ACF(Employed) |> autoplot() +
+      labs(y = "Persons (thousands)",
+         title = "Total employment in US retail")
+    
+    
+  } else if(input$transformation3=="difference"){
+    
+     p<-df |> ACF(diff) |> autoplot() +
+      labs(y = "Persons (thousands)",
+         title = "Total employment in US retail")
+     
+     
+  }else if(input$transformation3=="log"){
+    
+     p<-df |> ACF(log) |> autoplot() +
+      labs(y = "Persons (thousands)",
+         title = "Total employment in US retail")
+     
+     
+  }else if(input$transformation3=="diff_log"){
+    
+    p<-df |> ACF(diff_log) |> autoplot() +
+      labs(y = "Persons (thousands)",
+         title = "Total employment in US retail")
+  }
+  
+  ggplotly(p)
+
+})
+
+```
+
+
+
+### <b>PACF</b>
+
+```{r}
+
+
+renderPlotly({
+ 
+  if(input$transformation3=="none"){ 
+    
+    p<-df |> PACF(Employed) |> autoplot() +
+      labs(y = "Persons (thousands)",
+         title = "Total employment in US retail")
+    
+    
+  } else if(input$transformation3=="difference"){
+    
+     p<-df |> PACF(diff) |> autoplot() +
+      labs(y = "Persons (thousands)",
+         title = "Total employment in US retail")
+     
+     
+  }else if(input$transformation3=="log"){
+    
+     p<-df |> PACF(log) |> autoplot() +
+      labs(y = "Persons (thousands)",
+         title = "Total employment in US retail")
+     
+     
+  }else if(input$transformation3=="diff_log"){
+    
+    p<-df |> PACF(diff_log) |> autoplot() +
+      labs(y = "Persons (thousands)",
+         title = "Total employment in US retail")
+  }
+  
+  ggplotly(p)
+
+})
+
+```
+
+
+
+<b>Model</b> {data-orientation=rows}
+===================================== 
+
+Sidebar {.sidebar}
+-------------------------------------
+
+```{r}
+
+numericInput("p",value = 0,min = 0,max = 12, step = 1,label = "ARIMA Input: P")
+
+numericInput("d",value = 0,min = 0,max = 12, step = 1,label = "ARIMA Input: D")
+
+numericInput("q",value = 0,min = 0,max = 12, step = 1,label = "ARIMA Input: Q")
+
+```
+
+
+
+
+
+
+Row 
+-------------------------------------
+
+### <b>ARIMA</b>
+
+```{r}
+
+renderDataTable({
+
+  fit<-df|>
+    model(arima013 = ARIMA(Employed ~ pdq(0,1,3)),
+          arima_input = ARIMA(Employed  ~ pdq(input$p,input$d,input$q)),
+          stepwise = ARIMA(Employed),
+          search = ARIMA(Employed , stepwise=FALSE))
+
+  glance(fit) |> arrange(AICc) |> select(.model:BIC)
+  
+
+})
+
+```
+
+
+### <b>Residual Diagnostics</b>
+
+```{r}
+
+renderPlot({
+  
+  resids<-df|>
+    model(arima013 = ARIMA(Employed ~ pdq(0,1,3)),
+          arima_input = ARIMA(Employed  ~ pdq(input$p,input$d,input$q)),
+          stepwise = ARIMA(Employed),
+          search = ARIMA(Employed , stepwise=FALSE))
+
+  test<-glance(resids) |> arrange(AICc) |> select(.model:BIC)
+  
+  model<-test[1,1]
+
+
+  text<-model$.model
+
+
+  z<-resids[,text]|>
+          gg_tsresiduals()
+  
+  
+  z
+
+})
+
+
+```
+
+
+Row 
+-------------------------------------
+
+### <b> Ljung-Box Test</b>
+
+```{r}
+
+renderDataTable({
+  
+  resids<-df|>
+    model(arima013 = ARIMA(Employed ~ pdq(0,1,3)),
+          arima_input = ARIMA(Employed  ~ pdq(input$p,input$d,input$q)),
+          stepwise = ARIMA(Employed),
+          search = ARIMA(Employed , stepwise=FALSE))
+
+  test<-glance(resids) |> arrange(AICc) |> select(.model:BIC)
+  
+  model<-test[1,1]
+  
+  
+  text<-model$.model
+  
+  
+  augment(resids[,text]) |> features(.innov, ljung_box, lag=10)
+  
+})
+
+```
+
+
+
+<b>ARIMA Forecast</b> {data-orientation=rows}
+===================================== 
+
+Sidebar {.sidebar}
+-------------------------------------
+
+```{r}
+
+sliderTextInput(
+  inputId = "id", 
+  label = HTML('<b style="color:#234370;
+               font-size: 20px;
+               ">Forecast Horizon:</b>'), 
+  grid = TRUE, 
+  force_edges = TRUE,
+  choices = 1:50,
+  selected = 5
+  
+)
+
+```
+
+
+Row
+---------------------------------
+
+### <b>US Retail Employment</b>
+
+```{r}
+
+renderPlot({
+  
+  fit<-df|>
+      model(arima013 = ARIMA(Employed ~ pdq(0,1,3)),
+            arima310 = ARIMA(Employed  ~ pdq(3,1,0)),
+            stepwise = ARIMA(Employed),
+            search = ARIMA(Employed , stepwise=FALSE))
+  
+  test<-glance(fit) |> arrange(AICc) |> select(.model:BIC)
+  
+  model<-test[1,1]
+  
+  
+  text<-model$.model
+  
+  p<-fit |>
+    forecast(h=input$id) |>
+    filter(.model==text) |>
+    autoplot(df)
   
   p
   
   
 })
-  
+
+
 ```
 
+
+
+<b>Comparison Forecast</b> {data-orientation=rows}
+===================================== 
+
+Sidebar {.sidebar}
+-------------------------------------
+
+```{r}
+
+sliderTextInput(
+  inputId = "id2", 
+  label = HTML('<b style="color:#234370;
+               font-size: 20px;
+               ">Forecast Horizon:</b>'), 
+  grid = TRUE, 
+  force_edges = TRUE,
+  choices = 1:60,
+  selected = 5
+  
+)
+
+```
+
+
+Row
+---------------------------------
+
+### <b>Comparison Forecast</b>
+
+```{r}
+
+renderPlot({
+  
+    train<- df|>
+       filter(Month <= yearmonth("2015 Jan"))
+    
+    fit <- train |>
+        model(
+          arima = ARIMA(Employed),
+          ets = ETS(Employed),
+          prophet = prophet(Employed ~ season(period = 12, order = 10,
+                                          type = "multiplicative"))
+        )
+  
+    fc <- fit |> forecast(h = input$id2)|> autoplot(df)
+    
+    fc
+    
+    
+})
+
+
+```
+
+
+
+Row 
+-------------------------------------
+
+### <b>Forecast Accuracy</b>
+
+```{r}
+
+renderDataTable({
+
+    train<- df|>
+           filter(Month <= yearmonth("2015 Jan"))
+        
+    fit <- train |>
+      model(
+        arima = ARIMA(Employed),
+        ets = ETS(Employed),
+        prophet = prophet(Employed ~ season(period = 12, order = 10,
+                                        type = "multiplicative")))
+      
+    fc <- fit |> forecast(h = input$id2)
+    
+    fc |> accuracy(df)
+
+})
+
+```
 
