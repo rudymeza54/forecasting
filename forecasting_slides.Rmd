@@ -1,0 +1,114 @@
+---
+title: "Forecasting"
+author: "Rudy Meza and DJ"
+date: "`r Sys.Date()`"
+output: ioslides_presentation
+---
+
+
+
+
+
+## Forecasting
+
+
+Time series:
+
+  * Statistical analysis of past historical data 
+
+  * Assumes causal relationships are stable (e.g. effect of a promotion, seasonal etc.)
+
+  * Good for short or medium term planning (e.g. yearly budget of an existing product range, electricity demand)
+
+  * Include moving average and weighted moving average for a larger data set (number of occurrences)
+  
+## Forecasting
+
+For accurate and reliable predictions, specific conditions must be met when forecasting:
+
+  * how well we understand the factors that contribute to it;
+  
+  * how much data is available;
+
+  * how similar the future is to the past;
+  
+  * whether the forecasts can affect the thing we are trying to forecast.
+
+## Example: Electrcity Demand
+
+Temperatures significantly affect electricity demand, while other factors, such as holidays and economic conditions, have a minor effect.
+
+Several years of historical data
+
+Short-Term Forecasting: Usually safe to assume demand will be similar to historical (weeks)
+
+As a Residential User, usually the price of electricity is not dependent on the demand. This means that demand forecasts have little to no effect on consumer behavior. 
+
+
+## Decomposition
+
+
+
+
+
+
+## Stationary
+
+
+
+
+
+
+
+
+
+## ARIMA (Box-Jenkins Model)
+
+
+
+
+
+
+
+
+
+
+
+## Prewhitening
+
+
+
+
+
+
+
+
+
+
+
+## Identification
+
+
+
+
+
+
+
+
+
+## Model
+
+
+
+
+
+
+
+
+## White Noise (Residual Diagnostics)
+
+
+
+
+## Forecast
+
