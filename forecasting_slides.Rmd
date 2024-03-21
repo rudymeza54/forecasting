@@ -1,6 +1,6 @@
 ---
 title: "Forecasting"
-author: "Rudy Meza and DJ"
+author: "Rudy Meza and DJ Marsh"
 date: "`r Sys.Date()`"
 output: ioslides_presentation
 ---
@@ -21,6 +21,23 @@ Time series:
   * Good for short or medium term planning (e.g. yearly budget of an existing product range, electricity demand)
 
   * Include moving average and weighted moving average for a larger data set (number of occurrences)
+  
+  
+## Examples of Time Series Data
+
+Examples of time series data include:
+
+  * Quarterly sales results for Amazon
+
+  * Weekly retail sales
+
+  * Daily IBM stock prices
+
+  * Hourly electricity demand
+
+  * Time-stamped stock transaction data
+
+Anything that is observed sequentially over time is a time series
   
 ## Forecasting
 
@@ -47,9 +64,53 @@ As a Residential User, usually the price of electricity is not dependent on the 
 
 ## Decomposition
 
+We want to look at the components of the series. This helps us dive into the series for analysis. The following components consist of the series:
+
+  * Trend
+  
+  * Seasonal Component
+  
+  * Remainder
+
+## Series
+
+```{r, echo =FALSE}
+
+knitr::include_graphics("images/series_one.png")
+
+```
+
+
+## Trend
+
+```{r, echo=FALSE}
+
+knitr::include_graphics("images/trend_one.png")
+
+```
 
 
 
+## Seasonal
+
+
+
+```{r, echo=FALSE}
+
+knitr::include_graphics("images/seasonal_one.png")
+
+```
+
+
+
+## Remainder
+
+
+```{r, echo=FALSE}
+
+knitr::include_graphics("images/remainder_one.png")
+
+```
 
 
 ## Stationary
