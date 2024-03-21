@@ -112,3 +112,16 @@ As a Residential User, usually the price of electricity is not dependent on the 
 
 ## Forecast
 
+
+
+
+
+## Prophet
+
+
+
+
+
+
+## Long Short-Term Memory (LSTM) networks
+
